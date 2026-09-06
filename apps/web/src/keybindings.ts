@@ -1,4 +1,10 @@
 /**
+ * [INPUT]: 依赖 ./env 的 isTauri（过滤 desktopOnly 动作），依赖浏览器 localStorage 持久化用户覆盖
+ * [OUTPUT]: 对外提供 Chord / ActionDef / ActionGroup 类型，IS_MAC、ACTIONS 目录，chordForPlatform、matchChord 与绑定读写函数
+ * [POS]: 全局快捷键的目录与匹配层；每个动作的行为在 App.tsx 的 handlers 表里
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+/**
  * Customizable keyboard shortcuts.
  *
  * Every global shortcut is an "action" with a default chord. The user can
@@ -129,6 +135,10 @@ const ACTION_DEFINITIONS: ActionDef[] = [
   // Mirrors ⌘B for the left sidebar, and matches iTerm2, whose right-hand
   // Toolbelt is also ⌘⇧B.
   { id: "toggleRail", label: "Toggle quick-action panel", group: "General", default: { code: "KeyB", meta: true, shift: true } },
+  // ⌃⌘F is the macOS chord for full screen (Control+Alt+F elsewhere, via
+  // chordForPlatform). Like New Window, the Window menu's item carries no
+  // keyEquivalent, so this stays the one binding — rebindable, and in ⌘P.
+  { id: "toggleFullscreen", label: "Toggle full screen", group: "General", default: { code: "KeyF", meta: true, ctrl: true }, desktopOnly: true },
   { id: "openSettings", label: "Open settings", group: "General", default: { code: "Comma", meta: true } },
   { id: "showGitDiff", label: "Show git diff", group: "General", default: { code: "KeyG", meta: true, alt: true } },
   { id: "search", label: "Search pages, tabs & panels", group: "General", default: { code: "KeyP", meta: true }, hideInPalette: true },

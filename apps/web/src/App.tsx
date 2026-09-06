@@ -1,3 +1,9 @@
+/**
+ * [INPUT]: 依赖 components/* 各面板组件，state/store 的全局 store 与选择器，state/windows 的多窗口能力，terminal/manager 的会话操作，keybindings 的动作目录，windowChrome 的全屏状态与切换
+ * [OUTPUT]: 对外提供 App 根组件
+ * [POS]: 前端组合根：拼装侧栏 / 顶栏 / 分屏区 / 侧轨，持有全局快捷键分发表，并把桌面窗口态（tauri、fullscreen）映射为根节点 class
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FindBar } from "./components/FindBar";
 import { GitDiff } from "./components/GitDiff";
@@ -25,6 +31,7 @@ import {
 } from "./terminal/manager";
 import { openLocalPathsInFocusedSession } from "./terminal/openLocalPath";
 import { checkForUpdate } from "./updater";
+import { toggleFullscreen, useWindowFullscreen } from "./windowChrome";
 
 /**
  * The pane a directional move (⌥⌘←→↑↓) should land on, chosen from the
@@ -99,6 +106,9 @@ export function App() {
   const settingsOpen = settingsSection !== null;
   const focusedPane = htab?.focused;
   const gitSession = useStore(focusedCwdSession);
+  // Native full screen (desktop): the chrome that only makes sense around a
+  // window — traffic lights, resize handles, rounded corners — steps aside.
+  const fullscreen = useWindowFullscreen();
 
   // The find bar targets one pane; if focus moves elsewhere, it would be
   // searching a terminal the user is no longer looking at — close it instead.
@@ -187,6 +197,7 @@ export function App() {
       },
       newWorkspace: (s) => s.addWorkspace(),
       newWindow: () => void openNewWindow(),
+      toggleFullscreen: () => void toggleFullscreen(),
       previousTheme: (s) => s.prevTheme(),
       nextTheme: (s) => s.nextTheme(),
       toggleSidebar: (s) => s.toggleSidebar(),
@@ -350,9 +361,9 @@ export function App() {
   }, []);
 
   return (
-    <div className={`app${isTauri ? " tauri" : ""}`}>
-      {isTauri && <WindowControls />}
-      {isTauri && <ResizeHandles />}
+    <div className={`app${isTauri ? " tauri" : ""}${fullscreen ? " fullscreen" : ""}`}>
+      {isTauri && !fullscreen && <WindowControls />}
+      {isTauri && !fullscreen && <ResizeHandles />}
       {!collapsed && <TreeSidebar onOpenSettings={openSettings} />}
       <div className="main">
         <HTabBar />
