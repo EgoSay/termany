@@ -126,8 +126,10 @@ body,
 }
 
 /* Desktop: borderless window, our own traffic lights float over the sidebar's
-   top-left. Reserve room so the workspace switcher doesn't sit underneath. */
-.app.tauri .ws-head {
+   top-left. Reserve room so the workspace switcher doesn't sit underneath.
+   Not in native full screen: macOS hides the lights there (ours unmount too,
+   see App.tsx), so the room goes with them. */
+.app.tauri:not(.fullscreen) .ws-head {
   padding-left: 78px;
 }
 
@@ -140,7 +142,9 @@ html.tauri body,
 html.tauri #root {
   background: transparent;
 }
-.app.tauri {
+/* Edge to edge in native full screen: a radius there would let the Space's
+   backdrop show through the corners. */
+.app.tauri:not(.fullscreen) {
   border-radius: 10px;
 }
 
@@ -1650,7 +1654,7 @@ html.tauri #root {
   cursor: default;
 }
 /* On desktop, when the sidebar is hidden the strip clears the traffic lights. */
-.htabbar.with-traffic {
+.app:not(.fullscreen) .htabbar.with-traffic {
   padding-left: 78px;
 }
 

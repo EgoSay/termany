@@ -1,6 +1,13 @@
+/**
+ * [INPUT]: 依赖 @tauri-apps/api/window 的 getCurrentWindow，依赖 react 的 useMemo，依赖 ./env 的 isMac / isTauri，依赖 ./windowChrome 的 applyWindowAction
+ * [OUTPUT]: 对外提供 titleBarBackground 标记、TitleBarAction / TitleBarMouse 类型、createTitleBarGesture 状态机、useTitleBarGesture hook
+ * [POS]: 顶栏（HTabBar、WorkspaceSwitcher）拖动与双击 zoom 手势的唯一所有者；动作的执行交给 windowChrome
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useMemo, type MouseEvent } from "react";
-import { isTauri } from "./env";
+import { isMac, isTauri } from "./env";
+import { applyWindowAction } from "./windowChrome";
 
 /**
  * Native title-bar behaviour for the app's own chrome: drag the window from the
@@ -90,8 +97,6 @@ export function createTitleBarGesture(isMac: boolean) {
   };
 }
 
-const IS_MAC = typeof navigator !== "undefined" && navigator.userAgent.includes("Mac");
-
 function read(event: MouseEvent): TitleBarMouse {
   const target = event.target;
   return {
@@ -111,11 +116,12 @@ function read(event: MouseEvent): TitleBarMouse {
  *   <div className="htabbar" {...titleBar} {...titleBarBackground}>
  */
 export function useTitleBarGesture() {
-  const gesture = useMemo(() => createTitleBarGesture(IS_MAC), []);
+  const gesture = useMemo(() => createTitleBarGesture(isMac), []);
 
+  // windowChrome owns what a zoom means — and drops it inside native full
+  // screen, where a double-click must not disturb the window tao will restore.
   const apply = (action: TitleBarAction) => {
-    if (action === "drag") void getCurrentWindow().startDragging();
-    else if (action === "zoom") void getCurrentWindow().toggleMaximize();
+    void applyWindowAction(action, getCurrentWindow()).catch(() => {});
   };
 
   return {

@@ -1,3 +1,7 @@
+// [INPUT]: 依赖 tauri 2（窗口、菜单、托盘、事件）、tauri 插件（log / opener / updater / process / single-instance / global-shortcut）、objc2 系 crate（macOS 服务与粘贴板）、windows-sys（Windows 托盘）
+// [OUTPUT]: 对外提供 run（桌面入口）与前端 IPC 命令（stop_server、open_new_window、claim_page、page_claims、confirm_quit、窗口切换快捷键读写等）
+// [POS]: desktop 壳的运行时协调者：窗口生命周期、原生菜单、内置 PTY 服务的启停；前端侧的窗口动作见 apps/web/src/windowChrome.ts
+// [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
@@ -1213,10 +1217,18 @@ pub fn run() {
                     .id("new_window")
                     .build(app)?;
                 let minimize = MenuItemBuilder::new("Minimize").id("minimize").build(app)?;
+                // Same no-accelerator rule: the app binds ⌃⌘F itself
+                // (toggleFullscreen in keybindings.ts). The item is the menu-bar
+                // entry point for the full screen the green light enters — a
+                // borderless window gets no native Window menu to provide one.
+                let fullscreen = MenuItemBuilder::new("Toggle Full Screen")
+                    .id("toggle_fullscreen")
+                    .build(app)?;
                 let window_menu = SubmenuBuilder::new(app, "Window")
                     .item(&new_window)
                     .separator()
                     .item(&minimize)
+                    .item(&fullscreen)
                     .build()?;
                 let menu = MenuBuilder::new(app)
                     .items(&[&app_menu, &edit_menu, &window_menu])
@@ -1232,6 +1244,12 @@ pub fn run() {
                     "minimize" => {
                         if let Some(window) = target_window(app_handle) {
                             let _ = window.minimize();
+                        }
+                    }
+                    "toggle_fullscreen" => {
+                        if let Some(window) = target_window(app_handle) {
+                            let entering = !window.is_fullscreen().unwrap_or(false);
+                            let _ = window.set_fullscreen(entering);
                         }
                     }
                     _ => {}
